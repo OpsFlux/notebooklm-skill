@@ -1,11 +1,22 @@
 ---
 name: notebooklm
-description: Use this skill to query your Google NotebookLM notebooks directly from Claude Code for source-grounded, citation-backed answers from Gemini. Browser automation, library management, persistent auth. Drastically reduced hallucinations through document-only responses.
+description: Query AND UPLOAD to Google NotebookLM. Create new notebooks, upload local files (PDF/MD/TXT), add URLs, paste text content. Browser automation with persistent auth.
 ---
 
 # NotebookLM Research Assistant Skill
 
-Interact with Google NotebookLM to query documentation with Gemini's source-grounded answers. Each question opens a fresh browser session, retrieves the answer exclusively from your uploaded documents, and closes.
+**Full NotebookLM automation**: Query notebooks AND upload local files/notes to NotebookLM.
+
+## 🎯 Core Capabilities
+
+| Capability | Script | Description |
+|------------|--------|-------------|
+| **📤 Upload Files** | `upload_sources.py upload` | Upload PDF, MD, TXT, DOCX files to NotebookLM |
+| **📓 Create Notebook** | `upload_sources.py create` | Create a new empty notebook |
+| **🔗 Add URLs** | `upload_sources.py add-urls` | Add websites/YouTube as sources |
+| **📝 Add Text** | `upload_sources.py add-text` | Paste text content as source |
+| **❓ Ask Questions** | `ask_question.py` | Query notebooks with Gemini |
+| **📚 Manage Library** | `notebook_manager.py` | Save/organize notebook references |
 
 ## When to Use This Skill
 
@@ -15,6 +26,30 @@ Trigger when user:
 - Asks to query their notebooks/documentation
 - Wants to add documentation to NotebookLM library
 - Uses phrases like "ask my NotebookLM", "check my docs", "query my notebook"
+- **Wants to upload local files/notes to NotebookLM**
+- **Asks to create a new NotebookLM notebook**
+- **Uses phrases like "upload to NotebookLM", "add my files to notebook", "sync my notes"**
+
+## ⚡ Quick Reference: Upload Commands
+
+```bash
+# Create new notebook
+python scripts/run.py upload_sources.py create --name "My Project Docs"
+
+# Upload local files to notebook
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --create-notebook "New Notebook"
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --notebook-url "https://notebooklm.google.com/notebook/..."
+
+# Batch upload from directory
+python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --extensions "pdf,md,txt" --create-notebook "Documentation"
+
+# Add URLs
+python scripts/run.py upload_sources.py add-urls --urls "https://example.com" --notebook-url "..."
+
+# Add text content
+python scripts/run.py upload_sources.py add-text --text "Your content..." --notebook-url "..."
+python scripts/run.py upload_sources.py add-text --file "/path/to/content.txt" --notebook-url "..."
+```
 
 ## ⚠️ CRITICAL: Add Command - Smart Discovery
 
@@ -172,6 +207,57 @@ python scripts/run.py cleanup_manager.py --confirm          # Execute cleanup
 python scripts/run.py cleanup_manager.py --preserve-library # Keep notebooks
 ```
 
+### Source Upload (`upload_sources.py`)
+
+**NEW!** Upload local notes, files, URLs, or text content to NotebookLM notebooks.
+
+#### Create New Notebook
+```bash
+python scripts/run.py upload_sources.py create --name "My Project Docs"
+```
+
+#### Upload Local Files
+```bash
+# Upload to existing notebook
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf,/path/to/notes.md" --notebook-url "https://notebooklm.google.com/notebook/..."
+
+# Upload to notebook from library
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --notebook-id my-notebook-id
+
+# Create new notebook and upload
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --create-notebook "New Project"
+```
+
+#### Upload Directory (Batch)
+```bash
+# Upload all supported files from directory
+python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --notebook-id ID
+
+# Filter by extension
+python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --extensions "pdf,md,txt" --create-notebook "Documentation"
+```
+
+#### Add URLs (Websites/YouTube)
+```bash
+python scripts/run.py upload_sources.py add-urls --urls "https://example.com,https://youtube.com/watch?v=..." --notebook-id ID
+```
+
+#### Add Text Content
+```bash
+# From command line
+python scripts/run.py upload_sources.py add-text --text "Your long text content here..." --notebook-id ID
+
+# From file
+python scripts/run.py upload_sources.py add-text --file "/path/to/content.txt" --notebook-id ID
+```
+
+**Supported file formats:** PDF, TXT, MD, DOCX, DOC
+
+**Limits:**
+- Max 50 sources per notebook
+- Max 500,000 words per source
+- Use `--show-browser` for debugging
+
 ## Environment Management
 
 The virtual environment is automatically managed:
@@ -218,16 +304,39 @@ Check auth → python scripts/run.py auth_manager.py status
     ↓
 If not authenticated → python scripts/run.py auth_manager.py setup
     ↓
-Check/Add notebook → python scripts/run.py notebook_manager.py list/add (with --description)
-    ↓
-Activate notebook → python scripts/run.py notebook_manager.py activate --id ID
-    ↓
-Ask question → python scripts/run.py ask_question.py --question "..."
-    ↓
-See "Is that ALL you need?" → Ask follow-ups until complete
-    ↓
-Synthesize and respond to user
+┌─────────────────────────────────────────────────────────────┐
+│                    WHAT DOES USER WANT?                      │
+├─────────────────────────────────────────────────────────────┤
+│                           │                                   │
+│    📤 UPLOAD FILES        │    ❓ ASK QUESTIONS               │
+│                           │                                   │
+│    ↓                      │    ↓                              │
+│    Create/Select notebook │    Check/Add notebook             │
+│    ↓                      │    ↓                              │
+│    upload_sources.py      │    ask_question.py                │
+│    upload/upload-dir/     │    --question "..."               │
+│    add-urls/add-text      │    ↓                              │
+│                           │    Follow-ups until complete      │
+│                           │    ↓                              │
+│                           │    Synthesize and respond         │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+### Upload Flow (New!)
+```
+User wants to upload local files
+    ↓
+Check auth → python scripts/run.py auth_manager.py status
+    ↓
+Create new notebook (optional) → python scripts/run.py upload_sources.py create --name "..."
+    ↓
+Upload files → python scripts/run.py upload_sources.py upload --files "..." --notebook-url/--notebook-id
+    ↓
+Confirm upload success
+    ↓
+(Optional) Add notebook to library → python scripts/run.py notebook_manager.py add --url URL
+```
+
 
 ## Troubleshooting
 
