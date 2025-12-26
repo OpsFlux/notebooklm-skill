@@ -361,8 +361,8 @@ Confirm upload success
 
 - No session persistence (each question = new browser)
 - Rate limits on free Google accounts (50 queries/day)
-- Manual upload required (user must add docs to NotebookLM)
-- Browser overhead (few seconds per question)
+- Max 50 sources per notebook, 500,000 words per source
+- Browser overhead (few seconds per operation)
 
 ## Resources (Skill Structure)
 
