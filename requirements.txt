@@ -1,10 +1,10 @@
-# NotebookLM Skill Dependencies
-# These will be installed in the skill's local .venv
+# NotebookLM 技能依赖项
+# 这些将安装在技能的本地 .venv 中
 
-# Core browser automation with anti-detection
-# Note: After installation, run: patchright install chrome
-# (Chrome is required, not Chromium, for cross-platform reliability)
+# 核心浏览器自动化，带反检测功能
+# 注意：安装后，运行：patchright install chrome
+# （需要 Chrome，而不是 Chromium，以确保跨平台可靠性）
 patchright==1.55.2
 
-# Environment management
+# 环境管理
 python-dotenv==1.0.0

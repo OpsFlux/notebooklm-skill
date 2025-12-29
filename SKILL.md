@@ -1,191 +1,191 @@
 ---
 name: notebooklm
-description: Query AND UPLOAD to Google NotebookLM. Create new notebooks, upload local files (PDF/MD/TXT), add URLs, paste text content. Browser automation with persistent auth.
+description: 查询并上传到 Google NotebookLM。创建新笔记本，上传本地文件（PDF/MD/TXT），添加 URL，粘贴文本内容。浏览器自动化支持持久身份验证。
 ---
 
-# NotebookLM Research Assistant Skill
+# NotebookLM 研究助手技能
 
-**Full NotebookLM automation**: Query notebooks AND upload local files/notes to NotebookLM.
+**完整的 NotebookLM 自动化**：查询笔记本并将本地文件/笔记上传到 NotebookLM。
 
-## 🎯 Core Capabilities
+## 核心功能
 
-| Capability | Script | Description |
+| 功能 | 脚本 | 描述 |
 |------------|--------|-------------|
-| **📤 Upload Files** | `upload_sources.py upload` | Upload PDF, MD, TXT, DOCX files to NotebookLM |
-| **📓 Create Notebook** | `upload_sources.py create` | Create a new empty notebook |
-| **🔗 Add URLs** | `upload_sources.py add-urls` | Add websites/YouTube as sources |
-| **📝 Add Text** | `upload_sources.py add-text` | Paste text content as source |
-| **❓ Ask Questions** | `ask_question.py` | Query notebooks with Gemini |
-| **📚 Manage Library** | `notebook_manager.py` | Save/organize notebook references |
+| **上传文件** | `upload_sources.py upload` | 上传 PDF、MD、TXT、DOCX 文件到 NotebookLM |
+| **创建笔记本** | `upload_sources.py create` | 创建新的空笔记本 |
+| **添加 URL** | `upload_sources.py add-urls` | 添加网站/YouTube 作为来源 |
+| **添加文本** | `upload_sources.py add-text` | 粘贴文本内容作为来源 |
+| **提问** | `ask_question.py` | 使用 Gemini 查询笔记本 |
+| **管理库** | `notebook_manager.py` | 保存/组织笔记本引用 |
 
-## When to Use This Skill
+## 何时使用此技能
 
-Trigger when user:
-- Mentions NotebookLM explicitly
-- Shares NotebookLM URL (`https://notebooklm.google.com/notebook/...`)
-- Asks to query their notebooks/documentation
-- Wants to add documentation to NotebookLM library
-- Uses phrases like "ask my NotebookLM", "check my docs", "query my notebook"
-- **Wants to upload local files/notes to NotebookLM**
-- **Asks to create a new NotebookLM notebook**
-- **Uses phrases like "upload to NotebookLM", "add my files to notebook", "sync my notes"**
+在以下情况下触发：
+- 用户明确提到 NotebookLM
+- 用户分享 NotebookLM URL (`https://notebooklm.google.com/notebook/...`)
+- 用户要求查询他们的笔记本/文档
+- 用户想要将文档添加到 NotebookLM 库
+- 用户使用"查询我的 NotebookLM"、"检查我的文档"、"查询我的笔记本"等短语
+- **用户想要上传本地文件/笔记到 NotebookLM**
+- **用户要求创建新的 NotebookLM 笔记本**
+- **用户使用"上传到 NotebookLM"、"添加我的文件到笔记本"、"同步我的笔记"等短语**
 
-## ⚡ Quick Reference: Upload Commands
+## 快速参考：上传命令
 
 ```bash
-# Create new notebook
-python scripts/run.py upload_sources.py create --name "My Project Docs"
+# 创建新笔记本
+python scripts/run.py upload_sources.py create --name "我的项目文档"
 
-# Upload local files to notebook
-python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --create-notebook "New Notebook"
+# 上传本地文件到笔记本
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --create-notebook "新笔记本"
 python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --notebook-url "https://notebooklm.google.com/notebook/..."
 
-# Batch upload from directory
-python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --extensions "pdf,md,txt" --create-notebook "Documentation"
+# 从目录批量上传
+python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --extensions "pdf,md,txt" --create-notebook "文档"
 
-# Add URLs
+# 添加 URL
 python scripts/run.py upload_sources.py add-urls --urls "https://example.com" --notebook-url "..."
 
-# Add text content
-python scripts/run.py upload_sources.py add-text --text "Your content..." --notebook-url "..."
+# 添加文本内容
+python scripts/run.py upload_sources.py add-text --text "您的内容..." --notebook-url "..."
 python scripts/run.py upload_sources.py add-text --file "/path/to/content.txt" --notebook-url "..."
 ```
 
-## ⚠️ CRITICAL: Add Command - Smart Discovery
+## 重要：添加命令 - 智能发现
 
-When user wants to add a notebook without providing details:
+当用户想要添加笔记本但未提供详细信息时：
 
-**SMART ADD (Recommended)**: Query the notebook first to discover its content:
+**智能添加（推荐）**：首先查询笔记本以发现其内容：
 ```bash
-# Step 1: Query the notebook about its content
-python scripts/run.py ask_question.py --question "What is the content of this notebook? What topics are covered? Provide a complete overview briefly and concisely" --notebook-url "[URL]"
+# 步骤 1：查询笔记本关于其内容
+python scripts/run.py ask_question.py --question "这个笔记本的内容是什么？涵盖哪些主题？请简要完整地概述" --notebook-url "[URL]"
 
-# Step 2: Use the discovered information to add it
-python scripts/run.py notebook_manager.py add --url "[URL]" --name "[Based on content]" --description "[Based on content]" --topics "[Based on content]"
+# 步骤 2：使用发现的信息添加它
+python scripts/run.py notebook_manager.py add --url "[URL]" --name "[基于内容]" --description "[基于内容]" --topics "[基于内容]"
 ```
 
-**MANUAL ADD**: If user provides all details:
-- `--url` - The NotebookLM URL
-- `--name` - A descriptive name
-- `--description` - What the notebook contains (REQUIRED!)
-- `--topics` - Comma-separated topics (REQUIRED!)
+**手动添加**：如果用户提供所有详细信息：
+- `--url` - NotebookLM URL
+- `--name` - 描述性名称
+- `--description` - 笔记本包含的内容（必需！）
+- `--topics` - 逗号分隔的主题（必需！）
 
-NEVER guess or use generic descriptions! If details missing, use Smart Add to discover them.
+永远不要猜测或使用通用描述！如果缺少详细信息，请使用智能添加来发现它们。
 
-## Critical: Always Use run.py Wrapper
+## 关键：始终使用 run.py 包装器
 
-**NEVER call scripts directly. ALWAYS use `python scripts/run.py [script]`:**
+**永远不要直接调用脚本。始终使用 `python scripts/run.py [script]`：**
 
 ```bash
-# ✅ CORRECT - Always use run.py:
+# 正确 - 始终使用 run.py:
 python scripts/run.py auth_manager.py status
 python scripts/run.py notebook_manager.py list
 python scripts/run.py ask_question.py --question "..."
 
-# ❌ WRONG - Never call directly:
-python scripts/auth_manager.py status  # Fails without venv!
+# 错误 - 永远不要直接调用:
+python scripts/auth_manager.py status  # 没有虚拟环境会失败！
 ```
 
-The `run.py` wrapper automatically:
-1. Creates `.venv` if needed
-2. Installs all dependencies
-3. Activates environment
-4. Executes script properly
+`run.py` 包装器自动：
+1. 如果需要，创建 `.venv`
+2. 安装所有依赖
+3. 激活环境
+4. 正确执行脚本
 
-## Core Workflow
+## 核心工作流程
 
-### Step 1: Check Authentication Status
+### 步骤 1：检查身份验证状态
 ```bash
 python scripts/run.py auth_manager.py status
 ```
 
-If not authenticated, proceed to setup.
+如果未通过身份验证，请继续设置。
 
-### Step 2: Authenticate (One-Time Setup)
+### 步骤 2：身份验证（一次性设置）
 ```bash
-# Browser MUST be visible for manual Google login
+# 浏览器必须可见以进行手动 Google 登录
 python scripts/run.py auth_manager.py setup
 ```
 
-**Important:**
-- Browser is VISIBLE for authentication
-- Browser window opens automatically
-- User must manually log in to Google
-- Tell user: "A browser window will open for Google login"
+**重要提示：**
+- 浏览器对身份验证可见
+- 浏览器窗口自动打开
+- 用户必须手动登录 Google
+- 告诉用户："将打开浏览器窗口进行 Google 登录"
 
-### Step 3: Manage Notebook Library
+### 步骤 3：管理笔记本库
 
 ```bash
-# List all notebooks
+# 列出所有笔记本
 python scripts/run.py notebook_manager.py list
 
-# BEFORE ADDING: Ask user for metadata if unknown!
-# "What does this notebook contain?"
-# "What topics should I tag it with?"
+# 添加之前：如果未知，请询问用户元数据！
+# "这个笔记本包含什么？"
+# "我应该给它标记哪些主题？"
 
-# Add notebook to library (ALL parameters are REQUIRED!)
+# 将笔记本添加到库（所有参数都是必需的！）
 python scripts/run.py notebook_manager.py add \
   --url "https://notebooklm.google.com/notebook/..." \
-  --name "Descriptive Name" \
-  --description "What this notebook contains" \  # REQUIRED - ASK USER IF UNKNOWN!
-  --topics "topic1,topic2,topic3"  # REQUIRED - ASK USER IF UNKNOWN!
+  --name "描述性名称" \
+  --description "这个笔记本包含的内容" \  # 必需 - 如果未知请询问用户！
+  --topics "主题1,主题2,主题3"  # 必需 - 如果未知请询问用户！
 
-# Search notebooks by topic
-python scripts/run.py notebook_manager.py search --query "keyword"
+# 按主题搜索笔记本
+python scripts/run.py notebook_manager.py search --query "关键词"
 
-# Set active notebook
+# 设置活动笔记本
 python scripts/run.py notebook_manager.py activate --id notebook-id
 
-# Remove notebook
+# 删除笔记本
 python scripts/run.py notebook_manager.py remove --id notebook-id
 ```
 
-### Quick Workflow
-1. Check library: `python scripts/run.py notebook_manager.py list`
-2. Ask question: `python scripts/run.py ask_question.py --question "..." --notebook-id ID`
+### 快速工作流程
+1. 检查库：`python scripts/run.py notebook_manager.py list`
+2. 提问：`python scripts/run.py ask_question.py --question "..." --notebook-id ID`
 
-### Step 4: Ask Questions
+### 步骤 4：提问
 
 ```bash
-# Basic query (uses active notebook if set)
-python scripts/run.py ask_question.py --question "Your question here"
+# 基本查询（如果设置了活动笔记本则使用）
+python scripts/run.py ask_question.py --question "您的问题"
 
-# Query specific notebook
+# 查询特定笔记本
 python scripts/run.py ask_question.py --question "..." --notebook-id notebook-id
 
-# Query with notebook URL directly
+# 直接使用笔记本 URL 查询
 python scripts/run.py ask_question.py --question "..." --notebook-url "https://..."
 
-# Show browser for debugging
+# 显示浏览器以进行调试
 python scripts/run.py ask_question.py --question "..." --show-browser
 ```
 
-## Follow-Up Mechanism (CRITICAL)
+## 后续机制（关键）
 
-Every NotebookLM answer ends with: **"EXTREMELY IMPORTANT: Is that ALL you need to know?"**
+每个 NotebookLM 答案都以：**"极其重要：这就是您需要了解的全部吗？"** 结尾
 
-**Required Claude Behavior:**
-1. **STOP** - Do not immediately respond to user
-2. **ANALYZE** - Compare answer to user's original request
-3. **IDENTIFY GAPS** - Determine if more information needed
-4. **ASK FOLLOW-UP** - If gaps exist, immediately ask:
+**所需的 Claude 行为：**
+1. **停止** - 不要立即响应用户
+2. **分析** - 将答案与用户的原始请求进行比较
+3. **识别差距** - 确定是否需要更多信息
+4. **询问后续** - 如果存在差距，立即询问：
    ```bash
-   python scripts/run.py ask_question.py --question "Follow-up with context..."
+   python scripts/run.py ask_question.py --question "带上下文的后续问题..."
    ```
-5. **REPEAT** - Continue until information is complete
-6. **SYNTHESIZE** - Combine all answers before responding to user
+5. **重复** - 继续直到信息完整
+6. **综合** - 在响应用户之前组合所有答案
 
-## Script Reference
+## 脚本参考
 
-### Authentication Management (`auth_manager.py`)
+### 身份验证管理 (`auth_manager.py`)
 ```bash
-python scripts/run.py auth_manager.py setup    # Initial setup (browser visible)
-python scripts/run.py auth_manager.py status   # Check authentication
-python scripts/run.py auth_manager.py reauth   # Re-authenticate (browser visible)
-python scripts/run.py auth_manager.py clear    # Clear authentication
+python scripts/run.py auth_manager.py setup    # 初始设置（浏览器可见）
+python scripts/run.py auth_manager.py status   # 检查身份验证
+python scripts/run.py auth_manager.py reauth   # 重新身份验证（浏览器可见）
+python scripts/run.py auth_manager.py clear    # 清除身份验证
 ```
 
-### Notebook Management (`notebook_manager.py`)
+### 笔记本管理 (`notebook_manager.py`)
 ```bash
 python scripts/run.py notebook_manager.py add --url URL --name NAME --description DESC --topics TOPICS
 python scripts/run.py notebook_manager.py list
@@ -195,78 +195,78 @@ python scripts/run.py notebook_manager.py remove --id ID
 python scripts/run.py notebook_manager.py stats
 ```
 
-### Question Interface (`ask_question.py`)
+### 问题接口 (`ask_question.py`)
 ```bash
 python scripts/run.py ask_question.py --question "..." [--notebook-id ID] [--notebook-url URL] [--show-browser]
 ```
 
-### Data Cleanup (`cleanup_manager.py`)
+### 数据清理 (`cleanup_manager.py`)
 ```bash
-python scripts/run.py cleanup_manager.py                    # Preview cleanup
-python scripts/run.py cleanup_manager.py --confirm          # Execute cleanup
-python scripts/run.py cleanup_manager.py --preserve-library # Keep notebooks
+python scripts/run.py cleanup_manager.py                    # 预览清理
+python scripts/run.py cleanup_manager.py --confirm          # 执行清理
+python scripts/run.py cleanup_manager.py --preserve-library # 保留笔记本
 ```
 
-### Source Upload (`upload_sources.py`)
+### 来源上传 (`upload_sources.py`)
 
-**NEW!** Upload local notes, files, URLs, or text content to NotebookLM notebooks.
+**新增！** 将本地笔记、文件、URL 或文本内容上传到 NotebookLM 笔记本。
 
-#### Create New Notebook
+#### 创建新笔记本
 ```bash
-python scripts/run.py upload_sources.py create --name "My Project Docs"
+python scripts/run.py upload_sources.py create --name "我的项目文档"
 ```
 
-#### Upload Local Files
+#### 上传本地文件
 ```bash
-# Upload to existing notebook
+# 上传到现有笔记本
 python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf,/path/to/notes.md" --notebook-url "https://notebooklm.google.com/notebook/..."
 
-# Upload to notebook from library
+# 从库上传到笔记本
 python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --notebook-id my-notebook-id
 
-# Create new notebook and upload
-python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --create-notebook "New Project"
+# 创建新笔记本并上传
+python scripts/run.py upload_sources.py upload --files "/path/to/doc.pdf" --create-notebook "新项目"
 ```
 
-#### Upload Directory (Batch)
+#### 上传目录（批量）
 ```bash
-# Upload all supported files from directory
+# 从目录上传所有支持的文件
 python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --notebook-id ID
 
-# Filter by extension
-python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --extensions "pdf,md,txt" --create-notebook "Documentation"
+# 按扩展名过滤
+python scripts/run.py upload_sources.py upload-dir --directory "/path/to/docs" --extensions "pdf,md,txt" --create-notebook "文档"
 ```
 
-#### Add URLs (Websites/YouTube)
+#### 添加 URL（网站/YouTube）
 ```bash
 python scripts/run.py upload_sources.py add-urls --urls "https://example.com,https://youtube.com/watch?v=..." --notebook-id ID
 ```
 
-#### Add Text Content
+#### 添加文本内容
 ```bash
-# From command line
-python scripts/run.py upload_sources.py add-text --text "Your long text content here..." --notebook-id ID
+# 从命令行
+python scripts/run.py upload_sources.py add-text --text "您的长文本内容在这里..." --notebook-id ID
 
-# From file
+# 从文件
 python scripts/run.py upload_sources.py add-text --file "/path/to/content.txt" --notebook-id ID
 ```
 
-**Supported file formats:** PDF, TXT, MD, DOCX, DOC
+**支持的文件格式：** PDF、TXT、MD、DOCX、DOC
 
-**Limits:**
-- Max 50 sources per notebook
-- Max 500,000 words per source
-- Use `--show-browser` for debugging
+**限制：**
+- 每个笔记本最多 50 个来源
+- 每个来源最多 500,000 字
+- 使用 `--show-browser` 进行调试
 
-## Environment Management
+## 环境管理
 
-The virtual environment is automatically managed:
-- First run creates `.venv` automatically
-- Dependencies install automatically
-- Chromium browser installs automatically
-- Everything isolated in skill directory
+虚拟环境自动管理：
+- 首次运行自动创建 `.venv`
+- 依赖项自动安装
+- Chromium 浏览器自动安装
+- 所有内容隔离在技能目录中
 
-Manual setup (only if automatic fails):
+手动设置（仅在自动失败时）：
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
@@ -274,105 +274,105 @@ pip install -r requirements.txt
 python -m patchright install chromium
 ```
 
-## Data Storage
+## 数据存储
 
-All data stored in `~/.claude/skills/notebooklm/data/`:
-- `library.json` - Notebook metadata
-- `auth_info.json` - Authentication status
-- `browser_state/` - Browser cookies and session
+所有数据存储在 `~/.claude/skills/notebooklm/data/`：
+- `library.json` - 笔记本元数据
+- `auth_info.json` - 身份验证状态
+- `browser_state/` - 浏览器 Cookie 和会话
 
-**Security:** Protected by `.gitignore`, never commit to git.
+**安全性：** 由 `.gitignore` 保护，永远不要提交到 git。
 
-## Configuration
+## 配置
 
-Optional `.env` file in skill directory:
+技能目录中的可选 `.env` 文件：
 ```env
-HEADLESS=false           # Browser visibility
-SHOW_BROWSER=false       # Default browser display
-STEALTH_ENABLED=true     # Human-like behavior
-TYPING_WPM_MIN=160       # Typing speed
+HEADLESS=false           # 浏览器可见性
+SHOW_BROWSER=false       # 默认浏览器显示
+STEALTH_ENABLED=true     # 人类行为
+TYPING_WPM_MIN=160       # 打字速度
 TYPING_WPM_MAX=240
-DEFAULT_NOTEBOOK_ID=     # Default notebook
+DEFAULT_NOTEBOOK_ID=     # 默认笔记本
 ```
 
-## Decision Flow
+## 决策流程
 
 ```
-User mentions NotebookLM
+用户提到 NotebookLM
     ↓
-Check auth → python scripts/run.py auth_manager.py status
+检查身份验证 → python scripts/run.py auth_manager.py status
     ↓
-If not authenticated → python scripts/run.py auth_manager.py setup
+如果未通过身份验证 → python scripts/run.py auth_manager.py setup
     ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                    WHAT DOES USER WANT?                      │
+│                    用户想要什么？                            │
 ├─────────────────────────────────────────────────────────────┤
 │                           │                                   │
-│    📤 UPLOAD FILES        │    ❓ ASK QUESTIONS               │
+│    上传文件        │    提问                            │
 │                           │                                   │
 │    ↓                      │    ↓                              │
-│    Create/Select notebook │    Check/Add notebook             │
+│    创建/选择笔记本 │    检查/添加笔记本             │
 │    ↓                      │    ↓                              │
 │    upload_sources.py      │    ask_question.py                │
 │    upload/upload-dir/     │    --question "..."               │
 │    add-urls/add-text      │    ↓                              │
-│                           │    Follow-ups until complete      │
+│                           │    后续直到完整              │
 │                           │    ↓                              │
-│                           │    Synthesize and respond         │
+│                           │    综合并响应                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Upload Flow (New!)
+### 上传流程（新增！）
 ```
-User wants to upload local files
+用户想要上传本地文件
     ↓
-Check auth → python scripts/run.py auth_manager.py status
+检查身份验证 → python scripts/run.py auth_manager.py status
     ↓
-Create new notebook (optional) → python scripts/run.py upload_sources.py create --name "..."
+创建新笔记本（可选）→ python scripts/run.py upload_sources.py create --name "..."
     ↓
-Upload files → python scripts/run.py upload_sources.py upload --files "..." --notebook-url/--notebook-id
+上传文件 → python scripts/run.py upload_sources.py upload --files "..." --notebook-url/--notebook-id
     ↓
-Confirm upload success
+确认上传成功
     ↓
-(Optional) Add notebook to library → python scripts/run.py notebook_manager.py add --url URL
+（可选）将笔记本添加到库 → python scripts/run.py notebook_manager.py add --url URL
 ```
 
 
-## Troubleshooting
+## 故障排除
 
-| Problem | Solution |
+| 问题 | 解决方案 |
 |---------|----------|
-| ModuleNotFoundError | Use `run.py` wrapper |
-| Authentication fails | Browser must be visible for setup! --show-browser |
-| Rate limit (50/day) | Wait or switch Google account |
-| Browser crashes | `python scripts/run.py cleanup_manager.py --preserve-library` |
-| Notebook not found | Check with `notebook_manager.py list` |
+| ModuleNotFoundError | 使用 `run.py` 包装器 |
+| 身份验证失败 | 设置时浏览器必须可见！ --show-browser |
+| 速率限制（50/天） | 等待或切换 Google 账户 |
+| 浏览器崩溃 | `python scripts/run.py cleanup_manager.py --preserve-library` |
+| 找不到笔记本 | 使用 `notebook_manager.py list` 检查 |
 
-## Best Practices
+## 最佳实践
 
-1. **Always use run.py** - Handles environment automatically
-2. **Check auth first** - Before any operations
-3. **Follow-up questions** - Don't stop at first answer
-4. **Browser visible for auth** - Required for manual login
-5. **Include context** - Each question is independent
-6. **Synthesize answers** - Combine multiple responses
+1. **始终使用 run.py** - 自动处理环境
+2. **首先检查身份验证** - 在任何操作之前
+3. **后续问题** - 不要在第一个答案处停止
+4. **身份验证时浏览器可见** - 需要手动登录
+5. **包含上下文** - 每个问题是独立的
+6. **综合答案** - 组合多个响应
 
-## Limitations
+## 限制
 
-- No session persistence (each question = new browser)
-- Rate limits on free Google accounts (50 queries/day)
-- Max 50 sources per notebook, 500,000 words per source
-- Browser overhead (few seconds per operation)
+- 无会话持久性（每个问题 = 新浏览器）
+- 免费 Google 账户的速率限制（每天 50 次查询）
+- 每个笔记本最多 50 个来源，每个来源最多 500,000 字
+- 浏览器开销（每次操作几秒钟）
 
-## Resources (Skill Structure)
+## 资源（技能结构）
 
-**Important directories and files:**
+**重要目录和文件：**
 
-- `scripts/` - All automation scripts (ask_question.py, notebook_manager.py, etc.)
-- `data/` - Local storage for authentication and notebook library
-- `references/` - Extended documentation:
-  - `api_reference.md` - Detailed API documentation for all scripts
-  - `troubleshooting.md` - Common issues and solutions
-  - `usage_patterns.md` - Best practices and workflow examples
-- `.venv/` - Isolated Python environment (auto-created on first run)
-- `.gitignore` - Protects sensitive data from being committed
+- `scripts/` - 所有自动化脚本（ask_question.py、notebook_manager.py 等）
+- `data/` - 身份验证和笔记本库的本地存储
+- `references/` - 扩展文档：
+  - `api_reference.md` - 所有脚本的详细 API 文档
+  - `troubleshooting.md` - 常见问题和解决方案
+  - `usage_patterns.md` - 最佳实践和工作流程示例
+- `.venv/` - 隔离的 Python 环境（首次运行时自动创建）
+- `.gitignore` - 保护敏感数据不被提交

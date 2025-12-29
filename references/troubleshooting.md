@@ -1,376 +1,376 @@
-# NotebookLM Skill Troubleshooting Guide
+# NotebookLM 技能故障排除指南
 
-## Quick Fix Table
+## 快速修复表
 
-| Error | Solution |
+| 错误 | 解决方案 |
 |-------|----------|
-| ModuleNotFoundError | Use `python scripts/run.py [script].py` |
-| Authentication failed | Browser must be visible for setup |
-| Browser crash | `python scripts/run.py cleanup_manager.py --preserve-library` |
-| Rate limit hit | Wait 1 hour or switch accounts |
-| Notebook not found | `python scripts/run.py notebook_manager.py list` |
-| Script not working | Always use run.py wrapper |
+| ModuleNotFoundError | 使用 `python scripts/run.py [script].py` |
+| 身份验证失败 | 设置时浏览器必须可见 |
+| 浏览器崩溃 | `python scripts/run.py cleanup_manager.py --preserve-library` |
+| 达到速率限制 | 等待 1 小时或切换账户 |
+| 找不到笔记本 | `python scripts/run.py notebook_manager.py list` |
+| 脚本不工作 | 始终使用 run.py 包装器 |
 
-## Critical: Always Use run.py
+## 关键：始终使用 run.py
 
-Most issues are solved by using the run.py wrapper:
+大多数问题可以通过使用 run.py 包装器来解决：
 
 ```bash
-# ✅ CORRECT - Always:
+# 正确 - 始终：
 python scripts/run.py auth_manager.py status
 python scripts/run.py ask_question.py --question "..."
 
-# ❌ WRONG - Never:
+# 错误 - 永远不要：
 python scripts/auth_manager.py status  # ModuleNotFoundError!
 ```
 
-## Common Issues and Solutions
+## 常见问题和解决方案
 
-### Authentication Issues
+### 身份验证问题
 
-#### Not authenticated error
+#### 未通过身份验证错误
 ```
 Error: Not authenticated. Please run auth setup first.
 ```
 
-**Solution:**
+**解决方案：**
 ```bash
-# Check status
+# 检查状态
 python scripts/run.py auth_manager.py status
 
-# Setup authentication (browser MUST be visible!)
+# 设置身份验证（浏览器必须可见！）
 python scripts/run.py auth_manager.py setup
-# User must manually log in to Google
+# 用户必须手动登录 Google
 
-# If setup fails, try re-authentication
+# 如果设置失败，尝试重新身份验证
 python scripts/run.py auth_manager.py reauth
 ```
 
-#### Authentication expires frequently
-**Solution:**
+#### 身份验证频繁过期
+**解决方案：**
 ```bash
-# Clear old authentication
+# 清除旧的身份验证
 python scripts/run.py cleanup_manager.py --preserve-library
 
-# Fresh authentication setup
+# 全新的身份验证设置
 python scripts/run.py auth_manager.py setup --timeout 15
 
-# Use persistent browser profile
+# 使用持久浏览器配置文件
 export PERSIST_AUTH=true
 ```
 
-#### Google blocks automated login
-**Solution:**
-1. Use dedicated Google account for automation
-2. Enable "Less secure app access" if available
-3. ALWAYS use visible browser:
+#### Google 阻止自动登录
+**解决方案：**
+1. 使用专用于自动化的 Google 账户
+2. 如果可用，启用"不太安全的应用访问"
+3. 始终使用可见浏览器：
 ```bash
 python scripts/run.py auth_manager.py setup
-# Browser MUST be visible - user logs in manually
-# NO headless parameter exists - use --show-browser for debugging
+# 浏览器必须可见 - 用户手动登录
+# 不存在 headless 参数 - 使用 --show-browser 进行调试
 ```
 
-### Browser Issues
+### 浏览器问题
 
-#### Browser crashes or hangs
+#### 浏览器崩溃或挂起
 ```
 TimeoutError: Waiting for selector failed
 ```
 
-**Solution:**
+**解决方案：**
 ```bash
-# Kill hanging processes
+# 终止挂起的进程
 pkill -f chromium
 pkill -f chrome
 
-# Clean browser state
+# 清理浏览器状态
 python scripts/run.py cleanup_manager.py --confirm --preserve-library
 
-# Re-authenticate
+# 重新身份验证
 python scripts/run.py auth_manager.py reauth
 ```
 
-#### Browser not found error
-**Solution:**
+#### 找不到浏览器错误
+**解决方案：**
 ```bash
-# Install Chromium via run.py (automatic)
+# 通过 run.py 自动安装 Chromium（自动）
 python scripts/run.py auth_manager.py status
-# run.py will install Chromium automatically
+# run.py 将自动安装 Chromium
 
-# Or manual install if needed
+# 如果需要，手动安装
 cd ~/.claude/skills/notebooklm
 source .venv/bin/activate
 python -m patchright install chromium
 ```
 
-### Rate Limiting
+### 速率限制
 
-#### Rate limit exceeded (50 queries/day)
-**Solutions:**
+#### 超过速率限制（每天 50 次）
+**解决方案：**
 
-**Option 1: Wait**
+**选项 1：等待**
 ```bash
-# Check when limit resets (usually midnight PST)
+# 检查限制何时重置（通常是太平洋时间午夜）
 date -d "tomorrow 00:00 PST"
 ```
 
-**Option 2: Switch accounts**
+**选项 2：切换账户**
 ```bash
-# Clear current auth
+# 清除当前身份验证
 python scripts/run.py auth_manager.py clear
 
-# Login with different account
+# 使用不同账户登录
 python scripts/run.py auth_manager.py setup
 ```
 
-**Option 3: Rotate accounts**
+**选项 3：轮换账户**
 ```python
-# Use multiple accounts
+# 使用多个账户
 accounts = ["account1", "account2"]
 for account in accounts:
-    # Switch account on rate limit
+    # 在速率限制时切换账户
     subprocess.run(["python", "scripts/run.py", "auth_manager.py", "reauth"])
 ```
 
-### Notebook Access Issues
+### 笔记本访问问题
 
-#### Notebook not found
-**Solution:**
+#### 找不到笔记本
+**解决方案：**
 ```bash
-# List all notebooks
+# 列出所有笔记本
 python scripts/run.py notebook_manager.py list
 
-# Search for notebook
+# 搜索笔记本
 python scripts/run.py notebook_manager.py search --query "keyword"
 
-# Add notebook if missing
+# 如果缺少则添加笔记本
 python scripts/run.py notebook_manager.py add \
   --url "https://notebooklm.google.com/..." \
-  --name "Name" \
+  --name "名称" \
   --topics "topics"
 ```
 
-#### Access denied to notebook
-**Solution:**
-1. Check if notebook is still shared publicly
-2. Re-add notebook with updated URL
-3. Verify correct Google account is used
+#### 笔记本访问被拒绝
+**解决方案：**
+1. 检查笔记本是否仍公开分享
+2. 使用更新的 URL 重新添加笔记本
+3. 验证使用的是正确的 Google 账户
 
-#### Wrong notebook being used
-**Solution:**
+#### 使用了错误的笔记本
+**解决方案：**
 ```bash
-# Check active notebook
+# 检查活动笔记本
 python scripts/run.py notebook_manager.py list | grep "active"
 
-# Activate correct notebook
+# 激活正确的笔记本
 python scripts/run.py notebook_manager.py activate --id correct-id
 ```
 
-### Virtual Environment Issues
+### 虚拟环境问题
 
 #### ModuleNotFoundError
 ```
 ModuleNotFoundError: No module named 'patchright'
 ```
 
-**Solution:**
+**解决方案：**
 ```bash
-# ALWAYS use run.py - it handles venv automatically!
+# 始终使用 run.py - 它自动处理 venv！
 python scripts/run.py [any_script].py
 
-# run.py will:
-# 1. Create .venv if missing
-# 2. Install dependencies
-# 3. Run the script
+# run.py 将：
+# 1. 如果缺少则创建 .venv
+# 2. 安装依赖项
+# 3. 运行脚本
 ```
 
-#### Wrong Python version
-**Solution:**
+#### Python 版本错误
+**解决方案：**
 ```bash
-# Check Python version (needs 3.8+)
+# 检查 Python 版本（需要 3.8+）
 python --version
 
-# If wrong version, specify correct Python
+# 如果版本错误，指定正确的 Python
 python3.8 scripts/run.py auth_manager.py status
 ```
 
-### Network Issues
+### 网络问题
 
-#### Connection timeouts
-**Solution:**
+#### 连接超时
+**解决方案：**
 ```bash
-# Increase timeout
+# 增加超时
 export TIMEOUT_SECONDS=60
 
-# Check connectivity
+# 检查连接
 ping notebooklm.google.com
 
-# Use proxy if needed
+# 如果需要，使用代理
 export HTTP_PROXY=http://proxy:port
 export HTTPS_PROXY=http://proxy:port
 ```
 
-### Data Issues
+### 数据问题
 
-#### Corrupted notebook library
+#### 笔记本库损坏
 ```
 JSON decode error when listing notebooks
 ```
 
-**Solution:**
+**解决方案：**
 ```bash
-# Backup current library
+# 备份当前库
 cp ~/.claude/skills/notebooklm/data/library.json library.backup.json
 
-# Reset library
+# 重置库
 rm ~/.claude/skills/notebooklm/data/library.json
 
-# Re-add notebooks
+# 重新添加笔记本
 python scripts/run.py notebook_manager.py add --url ... --name ...
 ```
 
-#### Disk space full
-**Solution:**
+#### 磁盘空间已满
+**解决方案：**
 ```bash
-# Check disk usage
+# 检查磁盘使用情况
 df -h ~/.claude/skills/notebooklm/data/
 
-# Clean up
+# 清理
 python scripts/run.py cleanup_manager.py --confirm --preserve-library
 ```
 
-## Debugging Techniques
+## 调试技术
 
-### Enable verbose logging
+### 启用详细日志
 ```bash
 export DEBUG=true
 export LOG_LEVEL=DEBUG
-python scripts/run.py ask_question.py --question "Test" --show-browser
+python scripts/run.py ask_question.py --question "测试" --show-browser
 ```
 
-### Test individual components
+### 测试各个组件
 ```bash
-# Test authentication
+# 测试身份验证
 python scripts/run.py auth_manager.py status
 
-# Test notebook access
+# 测试笔记本访问
 python scripts/run.py notebook_manager.py list
 
-# Test browser launch
+# 测试浏览器启动
 python scripts/run.py ask_question.py --question "test" --show-browser
 ```
 
-### Save screenshots on error
-Add to scripts for debugging:
+### 错误时保存屏幕截图
+添加到脚本以进行调试：
 ```python
 try:
-    # Your code
+    # 您的代码
 except Exception as e:
     page.screenshot(path=f"error_{timestamp}.png")
     raise e
 ```
 
-## Recovery Procedures
+## 恢复程序
 
-### Complete reset
+### 完全重置
 ```bash
 #!/bin/bash
-# Kill processes
+# 终止进程
 pkill -f chromium
 
-# Backup library if exists
+# 如果存在则备份库
 if [ -f ~/.claude/skills/notebooklm/data/library.json ]; then
     cp ~/.claude/skills/notebooklm/data/library.json ~/library.backup.json
 fi
 
-# Clean everything
+# 清理所有内容
 cd ~/.claude/skills/notebooklm
 python scripts/run.py cleanup_manager.py --confirm --force
 
-# Remove venv
+# 删除 venv
 rm -rf .venv
 
-# Reinstall (run.py will handle this)
+# 重新安装（run.py 将处理此问题）
 python scripts/run.py auth_manager.py setup
 
-# Restore library if backup exists
+# 如果备份存在则恢复库
 if [ -f ~/library.backup.json ]; then
     mkdir -p ~/.claude/skills/notebooklm/data/
     cp ~/library.backup.json ~/.claude/skills/notebooklm/data/library.json
 fi
 ```
 
-### Partial recovery (keep data)
+### 部分恢复（保留数据）
 ```bash
-# Keep auth and library, fix execution
+# 保留身份验证和库，修复执行
 cd ~/.claude/skills/notebooklm
 rm -rf .venv
 
-# run.py will recreate venv automatically
+# run.py 将自动重新创建 venv
 python scripts/run.py auth_manager.py status
 ```
 
-## Error Messages Reference
+## 错误消息参考
 
-### Authentication Errors
-| Error | Cause | Solution |
+### 身份验证错误
+| 错误 | 原因 | 解决方案 |
 |-------|-------|----------|
-| Not authenticated | No valid auth | `run.py auth_manager.py setup` |
-| Authentication expired | Session old | `run.py auth_manager.py reauth` |
-| Invalid credentials | Wrong account | Check Google account |
-| 2FA required | Security challenge | Complete in visible browser |
+| 未通过身份验证 | 无有效身份验证 | `run.py auth_manager.py setup` |
+| 身份验证已过期 | 会话过期 | `run.py auth_manager.py reauth` |
+| 无效凭据 | 错误的账户 | 检查 Google 账户 |
+| 需要双因素认证 | 安全挑战 | 在可见浏览器中完成 |
 
-### Browser Errors
-| Error | Cause | Solution |
+### 浏览器错误
+| 错误 | 原因 | 解决方案 |
 |-------|-------|----------|
-| Browser not found | Chromium missing | Use run.py (auto-installs) |
-| Connection refused | Browser crashed | Kill processes, restart |
-| Timeout waiting | Page slow | Increase timeout |
-| Context closed | Browser terminated | Check logs for crashes |
+| 找不到浏览器 | 缺少 Chromium | 使用 run.py（自动安装）|
+| 连接被拒绝 | 浏览器崩溃 | 终止进程，重启 |
+| 等待超时 | 页面慢 | 增加超时 |
+| 上下文已关闭 | 浏览器终止 | 检查日志中的崩溃 |
 
-### Notebook Errors
-| Error | Cause | Solution |
+### 笔记本错误
+| 错误 | 原因 | 解决方案 |
 |-------|-------|----------|
-| Notebook not found | Invalid ID | `run.py notebook_manager.py list` |
-| Access denied | Not shared | Re-share in NotebookLM |
-| Invalid URL | Wrong format | Use full NotebookLM URL |
-| No active notebook | None selected | `run.py notebook_manager.py activate` |
+| 找不到笔记本 | 无效 ID | `run.py notebook_manager.py list` |
+| 访问被拒绝 | 未分享 | 在 NotebookLM 中重新分享 |
+| 无效 URL | 格式错误 | 使用完整的 NotebookLM URL |
+| 无活动笔记本 | 未选择 | `run.py notebook_manager.py activate` |
 
-## Prevention Tips
+## 预防提示
 
-1. **Always use run.py** - Prevents 90% of issues
-2. **Regular maintenance** - Clear browser state weekly
-3. **Monitor queries** - Track daily count to avoid limits
-4. **Backup library** - Export notebook list regularly
-5. **Use dedicated account** - Separate Google account for automation
+1. **始终使用 run.py** - 防止 90% 的问题
+2. **定期维护** - 每周清理浏览器状态
+3. **监控查询** - 跟踪每日计数以避免限制
+4. **备份库** - 定期导出笔记本列表
+5. **使用专用账户** - 为自动化使用单独的 Google 账户
 
-## Getting Help
+## 获取帮助
 
-### Diagnostic information to collect
+### 要收集的诊断信息
 ```bash
-# System info
+# 系统信息
 python --version
 cd ~/.claude/skills/notebooklm
 ls -la
 
-# Skill status
+# 技能状态
 python scripts/run.py auth_manager.py status
 python scripts/run.py notebook_manager.py list | head -5
 
-# Check data directory
+# 检查数据目录
 ls -la ~/.claude/skills/notebooklm/data/
 ```
 
-### Common questions
+### 常见问题
 
-**Q: Why doesn't this work in Claude web UI?**
-A: Web UI has no network access. Use local Claude Code.
+**问：为什么这在 Claude Web UI 中不起作用？**
+答：Web UI 没有网络访问权限。使用本地 Claude Code。
 
-**Q: Can I use multiple Google accounts?**
-A: Yes, use `run.py auth_manager.py reauth` to switch.
+**问：我可以使用多个 Google 账户吗？**
+答：可以，使用 `run.py auth_manager.py reauth` 切换。
 
-**Q: How to increase rate limit?**
-A: Use multiple accounts or upgrade to Google Workspace.
+**问：如何提高速率限制？**
+答：使用多个账户或升级到 Google Workspace。
 
-**Q: Is this safe for my Google account?**
-A: Use dedicated account for automation. Only accesses NotebookLM.
+**问：这对我的 Google 账户安全吗？**
+答：使用专用账户进行自动化。仅访问 NotebookLM。

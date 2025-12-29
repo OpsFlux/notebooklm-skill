@@ -1,154 +1,154 @@
-# Authentication Architecture
+# 身份验证架构
 
-## Overview
+## 概述
 
-This skill uses a **hybrid authentication approach** that combines the best of both worlds:
+此技能使用**混合身份验证方法**，结合了两者的优点：
 
-1. **Persistent Browser Profile** (`user_data_dir`) for consistent browser fingerprinting
-2. **Manual Cookie Injection** from `state.json` for reliable session cookie persistence
+1. **持久浏览器配置文件** (`user_data_dir`) 用于一致的浏览器指纹识别
+2. **手动 Cookie 注入** 从 `state.json` 用于可靠的会话 Cookie 持久性
 
-## Why This Approach?
+## 为什么采用这种方法？
 
-### The Problem
+### 问题所在
 
-Playwright/Patchright has a known bug ([#36139](https://github.com/microsoft/playwright/issues/36139)) where **session cookies** (cookies without an `Expires` attribute) do not persist correctly when using `launch_persistent_context()` with `user_data_dir`.
+Playwright/Patchright 有一个已知问题 ([#36139](https://github.com/microsoft/playwright/issues/36139))，当使用带有 `user_data_dir` 的 `launch_persistent_context()` 时，**会话 Cookie**（没有 `Expires` 属性的 Cookie）无法正确持久化。
 
-**What happens:**
-- ✅ Persistent cookies (with `Expires` date) → Saved correctly to browser profile
-- ❌ Session cookies (without `Expires`) → **Lost after browser restarts**
+**发生了什么：**
+- 持久 Cookie（带有 `Expires` 日期）→ 正确保存到浏览器配置文件
+- 会话 Cookie（没有 `Expires`）→ **浏览器重启后丢失**
 
-**Impact:**
-- Some Google auth cookies are session cookies
-- Users experience random authentication failures
-- "Works on my machine" syndrome (depends on which cookies Google uses)
+**影响：**
+- 一些 Google 身份验证 Cookie 是会话 Cookie
+- 用户遇到随机身份验证失败
+- "在我的机器上可以工作"综合症（取决于 Google 使用哪些 Cookie）
 
-### TypeScript vs Python
+### TypeScript 与 Python
 
-The **MCP Server** (TypeScript) can work around this by passing `storage_state` as a parameter:
+**MCP 服务器**（TypeScript）可以通过将 `storage_state` 作为参数传递来解决此问题：
 
 ```typescript
-// TypeScript - works!
+// TypeScript - 有效！
 const context = await chromium.launchPersistentContext(userDataDir, {
-  storageState: "state.json",  // ← Loads cookies including session cookies
+  storageState: "state.json",  // ← 加载包括会话 Cookie 在内的 Cookie
   channel: "chrome"
 });
 ```
 
-But **Python's Playwright API doesn't support this** ([#14949](https://github.com/microsoft/playwright/issues/14949)):
+但 **Python 的 Playwright API 不支持这一点** ([#14949](https://github.com/microsoft/playwright/issues/14949))：
 
 ```python
-# Python - NOT SUPPORTED!
+# Python - 不支持！
 context = playwright.chromium.launch_persistent_context(
     user_data_dir=profile_dir,
-    storage_state="state.json",  # ← Parameter not available in Python!
+    storage_state="state.json",  # ← Python 中没有此参数！
     channel="chrome"
 )
 ```
 
-## Our Solution: Hybrid Approach
+## 我们的解决方案：混合方法
 
-We use a **two-phase authentication system**:
+我们使用**两阶段身份验证系统**：
 
-### Phase 1: Setup (`auth_manager.py setup`)
+### 阶段 1：设置 (`auth_manager.py setup`)
 
-1. Launch persistent context with `user_data_dir`
-2. User logs in manually
-3. **Save state to TWO places:**
-   - Browser profile directory (automatic, for fingerprint + persistent cookies)
-   - `state.json` file (explicit save, for session cookies)
+1. 使用 `user_data_dir` 启动持久上下文
+2. 用户手动登录
+3. **将状态保存到两个地方：**
+   - 浏览器配置文件目录（自动，用于指纹 + 持久 Cookie）
+   - `state.json` 文件（显式保存，用于会话 Cookie）
 
 ```python
 context = playwright.chromium.launch_persistent_context(
     user_data_dir="browser_profile/",
     channel="chrome"
 )
-# User logs in...
-context.storage_state(path="state.json")  # Save all cookies
+# 用户登录...
+context.storage_state(path="state.json")  # 保存所有 Cookie
 ```
 
-### Phase 2: Runtime (`ask_question.py`)
+### 阶段 2：运行时 (`ask_question.py`)
 
-1. Launch persistent context with `user_data_dir` (loads fingerprint + persistent cookies)
-2. **Manually inject cookies** from `state.json` (adds session cookies)
+1. 使用 `user_data_dir` 启动持久上下文（加载指纹 + 持久 Cookie）
+2. **从 `state.json` 手动注入 Cookie**（添加会话 Cookie）
 
 ```python
-# Step 1: Launch with browser profile
+# 步骤 1：使用浏览器配置文件启动
 context = playwright.chromium.launch_persistent_context(
     user_data_dir="browser_profile/",
     channel="chrome"
 )
 
-# Step 2: Manually inject cookies from state.json
+# 步骤 2：从 state.json 手动注入 Cookie
 with open("state.json", 'r') as f:
     state = json.load(f)
-    context.add_cookies(state['cookies'])  # ← Workaround for session cookies!
+    context.add_cookies(state['cookies'])  # ← 会话 Cookie 的变通方法！
 ```
 
-## Benefits
+## 优势
 
-| Feature | Our Approach | Pure `user_data_dir` | Pure `storage_state` |
+| 功能 | 我们的方法 | 纯 `user_data_dir` | 纯 `storage_state` |
 |---------|--------------|----------------------|----------------------|
-| **Browser Fingerprint Consistency** | ✅ Same across restarts | ✅ Same | ❌ Changes each time |
-| **Session Cookie Persistence** | ✅ Manual injection | ❌ Lost (bug) | ✅ Native support |
-| **Persistent Cookie Persistence** | ✅ Automatic | ✅ Automatic | ✅ Native support |
-| **Google Trust** | ✅ High (same browser) | ✅ High | ❌ Low (new browser) |
-| **Cross-platform Reliability** | ✅ Chrome required | ⚠️ Chromium issues | ✅ Portable |
-| **Cache Performance** | ✅ Keeps cache | ✅ Keeps cache | ❌ No cache |
+| **浏览器指纹一致性** | 重启间相同 | 相同 | 每次都变化 |
+| **会话 Cookie 持久性** | 手动注入 | 丢失（bug）| 原生支持 |
+| **持久 Cookie 持久性** | 自动 | 自动 | 原生支持 |
+| **Google 信任** | 高（相同浏览器）| 高 | 低（新浏览器）|
+| **跨平台可靠性** | 需要 Chrome | Chromium 问题 | 可移植 |
+| **缓存性能** | 保留缓存 | 保留缓存 | 无缓存 |
 
-## File Structure
+## 文件结构
 
 ```
 ~/.claude/skills/notebooklm/data/
-├── auth_info.json              # Metadata about authentication
+├── auth_info.json              # 关于身份验证的元数据
 ├── browser_state/
-│   ├── state.json             # Cookies + localStorage (for manual injection)
-│   └── browser_profile/       # Chrome user profile (for fingerprint + cache)
+│   ├── state.json             # Cookie + localStorage（用于手动注入）
+│   └── browser_profile/       # Chrome 用户配置文件（用于指纹 + 缓存）
 │       ├── Default/
-│       │   ├── Cookies        # Persistent cookies only (session cookies missing!)
+│       │   ├── Cookies        # 仅持久 Cookie（缺少会话 Cookie！）
 │       │   ├── Local Storage/
 │       │   └── Cache/
 │       └── ...
 ```
 
-## Why `state.json` is Critical
+## 为什么 `state.json` 至关重要
 
-Even though we use `user_data_dir`, we **still need `state.json`** because:
+即使我们使用 `user_data_dir`，我们**仍然需要 `state.json`**，因为：
 
-1. **Session cookies** are not saved to the browser profile (Playwright bug)
-2. **Manual injection** is the only reliable way to load session cookies
-3. **Validation** - we can check if cookies are expired before launching
+1. **会话 Cookie** 没有保存到浏览器配置文件（Playwright bug）
+2. **手动注入** 是加载会话 Cookie 的唯一可靠方法
+3. **验证** - 我们可以在启动前检查 Cookie 是否已过期
 
-## Code References
+## 代码参考
 
-**Setup:** `scripts/auth_manager.py:94-120`
-- Lines 100-113: Launch persistent context with `channel="chrome"`
-- Line 167: Save to `state.json` via `context.storage_state()`
+**设置：** `scripts/auth_manager.py:94-120`
+- 第 100-113 行：使用 `channel="chrome"` 启动持久上下文
+- 第 167 行：通过 `context.storage_state()` 保存到 `state.json`
 
-**Runtime:** `scripts/ask_question.py:77-118`
-- Lines 86-99: Launch persistent context
-- Lines 101-118: Manual cookie injection workaround
+**运行时：** `scripts/ask_question.py:77-118`
+- 第 86-99 行：启动持久上下文
+- 第 101-118 行：手动 Cookie 注入变通方法
 
-**Validation:** `scripts/auth_manager.py:236-298`
-- Lines 262-275: Launch persistent context
-- Lines 277-287: Manual cookie injection for validation
+**验证：** `scripts/auth_manager.py:236-298`
+- 第 262-275 行：启动持久上下文
+- 第 277-287 行：用于验证的手动 Cookie 注入
 
-## Related Issues
+## 相关问题
 
-- [microsoft/playwright#36139](https://github.com/microsoft/playwright/issues/36139) - Session cookies not persisting
-- [microsoft/playwright#14949](https://github.com/microsoft/playwright/issues/14949) - Storage state with persistent context
-- [StackOverflow Question](https://stackoverflow.com/questions/79641481/) - Session cookie persistence issue
+- [microsoft/playwright#36139](https://github.com/microsoft/playwright/issues/36139) - 会话 Cookie 不持久
+- [microsoft/playwright#14949](https://github.com/microsoft/playwright/issues/14949) - 持久上下文的存储状态
+- [StackOverflow 问题](https://stackoverflow.com/questions/79641481/) - 会话 Cookie 持久性问题
 
-## Future Improvements
+## 未来改进
 
-If Playwright adds support for `storage_state` parameter in Python's `launch_persistent_context()`, we can simplify to:
+如果 Playwright 在 Python 的 `launch_persistent_context()` 中添加对 `storage_state` 参数的支持，我们可以简化为：
 
 ```python
-# Future (when Python API supports it):
+# 未来（当 Python API 支持时）：
 context = playwright.chromium.launch_persistent_context(
     user_data_dir="browser_profile/",
-    storage_state="state.json",  # ← Would handle everything automatically!
+    storage_state="state.json",  # ← 会自动处理所有事情！
     channel="chrome"
 )
 ```
 
-Until then, our hybrid approach is the most reliable solution.
+在此之前，我们的混合方法是最可靠的解决方案。

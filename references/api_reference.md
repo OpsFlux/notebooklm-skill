@@ -1,175 +1,175 @@
-# NotebookLM Skill API Reference
+# NotebookLM 技能 API 参考
 
-Complete API documentation for all NotebookLM skill modules.
+所有 NotebookLM 技能模块的完整 API 文档。
 
-## Important: Always Use run.py Wrapper
+## 重要提示：始终使用 run.py 包装器
 
-**All commands must use the `run.py` wrapper to ensure proper environment:**
+**所有命令都必须使用 `run.py` 包装器以确保正确的环境：**
 
 ```bash
-# ✅ CORRECT:
+# 正确：
 python scripts/run.py [script_name].py [arguments]
 
-# ❌ WRONG:
-python scripts/[script_name].py [arguments]  # Will fail without venv!
+# 错误：
+python scripts/[script_name].py [arguments]  # 没有虚拟环境会失败！
 ```
 
-## Core Scripts
+## 核心脚本
 
 ### ask_question.py
-Query NotebookLM with automated browser interaction.
+使用自动化浏览器交互查询 NotebookLM。
 
 ```bash
-# Basic usage
-python scripts/run.py ask_question.py --question "Your question"
+# 基本用法
+python scripts/run.py ask_question.py --question "您的问题"
 
-# With specific notebook
+# 使用特定笔记本
 python scripts/run.py ask_question.py --question "..." --notebook-id notebook-id
 
-# With direct URL
+# 使用直接 URL
 python scripts/run.py ask_question.py --question "..." --notebook-url "https://..."
 
-# Show browser (debugging)
+# 显示浏览器（调试）
 python scripts/run.py ask_question.py --question "..." --show-browser
 ```
 
-**Parameters:**
-- `--question` (required): Question to ask
-- `--notebook-id`: Use notebook from library
-- `--notebook-url`: Use URL directly
-- `--show-browser`: Make browser visible
+**参数：**
+- `--question`（必需）：要问的问题
+- `--notebook-id`：使用库中的笔记本
+- `--notebook-url`：直接使用 URL
+- `--show-browser`：使浏览器可见
 
-**Returns:** Answer text with follow-up prompt appended
+**返回：** 附加了后续提示的答案文本
 
 ### notebook_manager.py
-Manage notebook library with CRUD operations.
+使用 CRUD 操作管理笔记本库。
 
 ```bash
-# Smart Add (discover content first)
-python scripts/run.py ask_question.py --question "What is the content of this notebook? What topics are covered? Provide a complete overview briefly and concisely" --notebook-url "[URL]"
-# Then add with discovered info
+# 智能添加（首先发现内容）
+python scripts/run.py ask_question.py --question "这个笔记本的内容是什么？涵盖哪些主题？请简要完整地概述" --notebook-url "[URL]"
+# 然后使用发现的信息添加
 python scripts/run.py notebook_manager.py add \
   --url "https://notebooklm.google.com/notebook/..." \
-  --name "Name" \
-  --description "Description" \
-  --topics "topic1,topic2"
+  --name "名称" \
+  --description "描述" \
+  --topics "主题1,主题2"
 
-# Direct add (when you know the content)
+# 直接添加（当您了解内容时）
 python scripts/run.py notebook_manager.py add \
   --url "https://notebooklm.google.com/notebook/..." \
-  --name "Name" \
-  --description "What it contains" \
-  --topics "topic1,topic2"
+  --name "名称" \
+  --description "它包含的内容" \
+  --topics "主题1,主题2"
 
-# List notebooks
+# 列出笔记本
 python scripts/run.py notebook_manager.py list
 
-# Search notebooks
-python scripts/run.py notebook_manager.py search --query "keyword"
+# 搜索笔记本
+python scripts/run.py notebook_manager.py search --query "关键词"
 
-# Activate notebook
+# 激活笔记本
 python scripts/run.py notebook_manager.py activate --id notebook-id
 
-# Remove notebook
+# 删除笔记本
 python scripts/run.py notebook_manager.py remove --id notebook-id
 
-# Show statistics
+# 显示统计信息
 python scripts/run.py notebook_manager.py stats
 ```
 
-**Commands:**
-- `add`: Add notebook (requires --url, --name, --topics)
-- `list`: Show all notebooks
-- `search`: Find notebooks by keyword
-- `activate`: Set default notebook
-- `remove`: Delete from library
-- `stats`: Display library statistics
+**命令：**
+- `add`：添加笔记本（需要 --url、--name、--topics）
+- `list`：显示所有笔记本
+- `search`：按关键词查找笔记本
+- `activate`：设置默认笔记本
+- `remove`：从库中删除
+- `stats`：显示库统计信息
 
 ### auth_manager.py
-Handle Google authentication and browser state.
+处理 Google 身份验证和浏览器状态。
 
 ```bash
-# Setup (browser visible for login)
+# 设置（浏览器可见以登录）
 python scripts/run.py auth_manager.py setup
 
-# Check status
+# 检查状态
 python scripts/run.py auth_manager.py status
 
-# Re-authenticate
+# 重新身份验证
 python scripts/run.py auth_manager.py reauth
 
-# Clear authentication
+# 清除身份验证
 python scripts/run.py auth_manager.py clear
 ```
 
-**Commands:**
-- `setup`: Initial authentication (browser MUST be visible)
-- `status`: Check if authenticated
-- `reauth`: Clear and re-setup
-- `clear`: Remove all auth data
+**命令：**
+- `setup`：初始身份验证（浏览器必须可见）
+- `status`：检查是否通过身份验证
+- `reauth`：清除并重新设置
+- `clear`：删除所有身份验证数据
 
 ### cleanup_manager.py
-Clean skill data with preservation options.
+使用保留选项清理技能数据。
 
 ```bash
-# Preview cleanup
+# 预览清理
 python scripts/run.py cleanup_manager.py
 
-# Execute cleanup
+# 执行清理
 python scripts/run.py cleanup_manager.py --confirm
 
-# Keep library
+# 保留库
 python scripts/run.py cleanup_manager.py --confirm --preserve-library
 
-# Force without prompt
+# 无提示强制执行
 python scripts/run.py cleanup_manager.py --confirm --force
 ```
 
-**Options:**
-- `--confirm`: Actually perform cleanup
-- `--preserve-library`: Keep notebook library
-- `--force`: Skip confirmation prompt
+**选项：**
+- `--confirm`：实际执行清理
+- `--preserve-library`：保留笔记本库
+- `--force`：跳过确认提示
 
 ### run.py
-Script wrapper that handles environment setup.
+处理环境设置的脚本包装器。
 
 ```bash
-# Usage
+# 用法
 python scripts/run.py [script_name].py [arguments]
 
-# Examples
+# 示例
 python scripts/run.py auth_manager.py status
 python scripts/run.py ask_question.py --question "..."
 ```
 
-**Automatic actions:**
-1. Creates `.venv` if missing
-2. Installs dependencies
-3. Activates environment
-4. Executes target script
+**自动操作：**
+1. 如果缺少则创建 `.venv`
+2. 安装依赖项
+3. 激活环境
+4. 执行目标脚本
 
-## Python API Usage
+## Python API 用法
 
-### Using subprocess with run.py
+### 使用 subprocess 与 run.py
 
 ```python
 import subprocess
 import json
 
-# Always use run.py wrapper
+# 始终使用 run.py 包装器
 result = subprocess.run([
     "python", "scripts/run.py", "ask_question.py",
-    "--question", "Your question",
+    "--question", "您的问题",
     "--notebook-id", "notebook-id"
 ], capture_output=True, text=True)
 
 answer = result.stdout
 ```
 
-### Direct imports (after venv exists)
+### 直接导入（在 venv 存在后）
 
 ```python
-# Only works if venv is already created and activated
+# 仅在 venv 已创建并激活时有效
 from notebook_manager import NotebookLibrary
 from auth_manager import AuthManager
 
@@ -180,66 +180,66 @@ auth = AuthManager()
 is_auth = auth.is_authenticated()
 ```
 
-## Data Storage
+## 数据存储
 
-Location: `~/.claude/skills/notebooklm/data/`
+位置：`~/.claude/skills/notebooklm/data/`
 
 ```
 data/
-├── library.json       # Notebook metadata
-├── auth_info.json     # Auth status
-└── browser_state/     # Browser cookies
+├── library.json       # 笔记本元数据
+├── auth_info.json     # 身份验证状态
+└── browser_state/     # 浏览器 Cookie
     └── state.json
 ```
 
-**Security:** Protected by `.gitignore`, never commit.
+**安全性：** 由 `.gitignore` 保护，永远不要提交。
 
-## Environment Variables
+## 环境变量
 
-Optional `.env` file configuration:
+可选的 `.env` 文件配置：
 
 ```env
-HEADLESS=false           # Browser visibility
-SHOW_BROWSER=false       # Default display
-STEALTH_ENABLED=true     # Human behavior
-TYPING_WPM_MIN=160       # Typing speed
+HEADLESS=false           # 浏览器可见性
+SHOW_BROWSER=false       # 默认显示
+STEALTH_ENABLED=true     # 人类行为
+TYPING_WPM_MIN=160       # 打字速度
 TYPING_WPM_MAX=240
-DEFAULT_NOTEBOOK_ID=     # Default notebook
+DEFAULT_NOTEBOOK_ID=     # 默认笔记本
 ```
 
-## Error Handling
+## 错误处理
 
-Common patterns:
+常见模式：
 
 ```python
-# Using run.py prevents most errors
+# 使用 run.py 防止大多数错误
 result = subprocess.run([
     "python", "scripts/run.py", "ask_question.py",
-    "--question", "Question"
+    "--question", "问题"
 ], capture_output=True, text=True)
 
 if result.returncode != 0:
     error = result.stderr
     if "rate limit" in error.lower():
-        # Wait or switch accounts
+        # 等待或切换账户
         pass
     elif "not authenticated" in error.lower():
-        # Run auth setup
+        # 运行身份验证设置
         subprocess.run(["python", "scripts/run.py", "auth_manager.py", "setup"])
 ```
 
-## Rate Limits
+## 速率限制
 
-Free Google accounts: 50 queries/day
+免费 Google 账户：每天 50 次查询
 
-Solutions:
-1. Wait for reset (midnight PST)
-2. Switch accounts with `reauth`
-3. Use multiple Google accounts
+解决方案：
+1. 等待重置（太平洋时间午夜）
+2. 使用 `reauth` 切换账户
+3. 使用多个 Google 账户
 
-## Advanced Patterns
+## 高级模式
 
-### Parallel Queries
+### 并行查询
 
 ```python
 import concurrent.futures
@@ -253,7 +253,7 @@ def query(question, notebook_id):
     ], capture_output=True, text=True)
     return result.stdout
 
-# Run multiple queries simultaneously
+# 同时运行多个查询
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
     futures = [
         executor.submit(query, q, nb)
@@ -262,7 +262,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
     results = [f.result() for f in futures]
 ```
 
-### Batch Processing
+### 批处理
 
 ```python
 def batch_research(questions, notebook_id):
@@ -274,11 +274,11 @@ def batch_research(questions, notebook_id):
             "--notebook-id", notebook_id
         ], capture_output=True, text=True)
         results.append(result.stdout)
-        time.sleep(2)  # Avoid rate limits
+        time.sleep(2)  # 避免速率限制
     return results
 ```
 
-## Module Classes
+## 模块类
 
 ### NotebookLibrary
 - `add_notebook(url, name, topics)`
@@ -295,15 +295,15 @@ def batch_research(questions, notebook_id):
 - `clear_auth()`
 - `validate_auth()`
 
-### BrowserSession (internal)
-- Handles browser automation
-- Manages stealth behavior
-- Not intended for direct use
+### BrowserSession（内部）
+- 处理浏览器自动化
+- 管理隐身行为
+- 不打算直接使用
 
-## Best Practices
+## 最佳实践
 
-1. **Always use run.py** - Ensures environment
-2. **Check auth first** - Before operations
-3. **Handle rate limits** - Implement retries
-4. **Include context** - Questions are independent
-5. **Clean sessions** - Use cleanup_manager
+1. **始终使用 run.py** - 确保环境
+2. **首先检查身份验证** - 操作前
+3. **处理速率限制** - 实现重试
+4. **包含上下文** - 问题是独立的
+5. **清理会话** - 使用 cleanup_manager
